@@ -57,10 +57,12 @@ echo $JAVA_HOME
 
 # install postgresql repository
 sudo rpm -Uvh https://yum.postgresql.org/10/redhat/rhel-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
-yum --disablerepo="*" --enablerepo="pgdg10" list available
 
 # install PostgreSQL 10, PostGIS 2.5 and dependencies
-yum install -y postgresql10 postgresql10-server postgresql10-libs postgresql10-contrib postgresql10-devel postgis
+yum install -y postgresql10 postgresql10-server postgresql10-libs postgresql10-contrib postgresql10-devel
+
+yum --disablerepo="*" --enablerepo="pgdg10" list available
+yum install postgis24_10
 
 # initialize database
 sudo /usr/pgsql-10/bin/postgresql-10-setup initdb
@@ -84,13 +86,13 @@ systemctl disable firewalld
 cd /root
 
 # download Gisgraphy
-wget http://download.gisgraphy.com/releases/gisgraphy-4.0-beta1.zip
+wget https://download.gisgraphy.com/releases/gisgraphy-latest.zip
 
 # unpack gisgraphy to the proper folder
-unzip gisgraphy-4.0-beta1.zip -d /var/lib/pgsql/
+unzip gisgraphy-latest.zip -d /var/lib/pgsql/
 
 # rename folder
-mv /var/lib/pgsql/gisgraphy-4.0-beta1 /var/lib/pgsql/gisgraphy
+mv /var/lib/pgsql/gisgraphy-5.0-beta3 /var/lib/pgsql/gisgraphy
 
 # set ownership of folder to postgres user
 chown postgres:postgres -R /var/lib/pgsql/gisgraphy
@@ -102,7 +104,7 @@ sudo -i -u postgres bash <<'EOF'
 psql -c  "CREATE DATABASE gisgraphy ENCODING = 'UTF8';"
 
 # create language
-createlang -U postgres -h localhost plpgsql gisgraphy 
+# createlang -U postgres -h localhost plpgsql gisgraphy 
 
 # create postgis Function
 psql -U postgres -h localhost -d gisgraphy -f /usr/pgsql-10/share/contrib/postgis-2.4/postgis.sql
@@ -133,10 +135,10 @@ EOF
 echo "postgres:password" | chpasswd
 
 # backup postgres conf
-mv /var/lib/pgsql/9.5/data/pg_hba.conf /var/lib/pgsql/9.5/data/pg_hba.conf.backup
+mv /var/lib/pgsql/10/data/pg_hba.conf /var/lib/pgsql/10/data/pg_hba.conf.backup
 
 # update postgres conf
-cat > /var/lib/pgsql/9.5/data/pg_hba.conf <<'EOF'
+cat > /var/lib/pgsql/10/data/pg_hba.conf <<'EOF'
 # TYPE  DATABASE        USER            ADDRESS                 METHOD
 
 # "local" is for Unix domain socket connections only
@@ -155,7 +157,7 @@ host    all             all             ::1/128                 trust
 EOF
 
 # restart postgres
-systemctl restart postgresql-9.5
+systemctl restart postgresql-10.service
 
 # add password to jdbc.properties
 sed -i '26s/jdbc.password=/jdbc.password=password/' /var/lib/pgsql/gisgraphy/webapps/ROOT/WEB-INF/classes/jdbc.properties
